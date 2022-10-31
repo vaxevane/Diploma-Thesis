@@ -1,0 +1,750 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>NaSch_model_with_and_without_flags_and_time_parking</title><meta name="generator" content="MATLAB 9.2"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2020-03-15"><meta name="DC.source" content="NaSch_model_with_and_without_flags_and_time_parking.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput">clear;
+clc;
+X = importdata(<span class="string">'test_data.txt'</span>);
+mymap = [0.6350 0.2 0 <span class="comment">%-2</span>
+     1 1 1 <span class="comment">%-1</span>
+     0 0 0 <span class="comment">%0</span>
+     1 0 0 <span class="comment">%1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   %1</span>
+     0 1 0 <span class="comment">%2</span>
+     0 1 1 <span class="comment">%3</span>
+     0 0 1 <span class="comment">%4</span>
+     0.75 0 0.75 <span class="comment">%5</span>
+     1 1 0 <span class="comment">%6</span>
+     0.45 0.45 0.45]; <span class="comment">%7</span>
+ch_slower_lane = 0.55;<span class="comment">%chance of flashing to the right</span>
+max_prob_ch_hispe = 0.65;<span class="comment">%chance of flashing to the left</span>
+new_car_prob = 0.8;<span class="comment">%new cars</span>
+dec_prob = 0.25;<span class="comment">%chance of decreasing speed</span>
+rand_park = 0.15;<span class="comment">%random chance to park</span>
+first_park = 5;
+last_park = 45;
+chance_of_not_having_flag = 0.15;
+max_parked = 5;<span class="comment">%max time step that the car is parked</span>
+
+cars1 = 8;
+cars2 = 14;
+<span class="keyword">for</span> pub=1:5
+full_road = zeros(65,60);
+full_road(:,:) = -2;
+lane(1:2,1:60) = -1;<span class="comment">%initialize all lanes</span>
+<span class="keyword">if</span> (0)
+    lane(2,:) = X(:,1)';<span class="comment">%initialize slow lane</span>
+<span class="keyword">else</span>
+    index_lane1 = randsample(50,cars1)';<span class="comment">%random car positions on fast lane</span>
+    index_lane2 = randsample(50,cars2)';<span class="comment">%random car positions on slow lane</span>
+    lane(1,index_lane1) = randi([0 5],1,cars1);<span class="comment">%random speed of the cars at fast lane</span>
+    lane(2,index_lane2) = randi([0 5],1,cars2);<span class="comment">%random speed of the cars at slow lane</span>
+<span class="keyword">end</span>
+<span class="keyword">if</span>(pub == 1)
+    [d,c] = size(lane);<span class="comment">%init</span>
+<span class="keyword">end</span>
+par_slots = zeros(1,c);
+steps_parked = zeros(1,c);<span class="comment">%how many time steps each car has stayed parked</span>
+par_slots(1,:) = -2;
+par_slots(1,first_park:last_park) = -1;
+ par_slots(1,10:17)=0;
+ par_slots(1,19:22)=0;
+ par_slots(1,30:37)=0;
+lane(3,:) = par_slots;
+park_signals = zeros(d,c);
+park_flags = zeros(1,c);
+park_flags(1,first_park:last_park) = 0;
+
+<span class="comment">%desire to park</span>
+park_signals(1,index_lane1) = rand(1,cars1)/2;
+park_signals(2,index_lane2) = rand(1,cars2)/2;
+
+full_road(2,:) = lane(1,:);
+full_road(3,:) = lane(2,:);
+full_road(4,:) = lane(3,:);
+
+[iter,~] = size(full_road);
+full_road(iter+d+2,:) = -2;
+
+<span class="keyword">for</span> e=4:4:iter
+    change_signals = zeros(d+1,c);<span class="comment">%signals for changing lanes</span>
+    <span class="keyword">if</span> ((lane(2,1) == -1) &amp;&amp; (rand(1)&gt;1-new_car_prob))<span class="comment">%new cars</span>
+        lane(2,1) = 1;
+        park_signals(2,1) = rand;
+    <span class="keyword">end</span>
+
+    <span class="keyword">if</span> ((lane(1,1) == -1) &amp;&amp; (rand(1)&gt;1-new_car_prob))<span class="comment">%new cars</span>
+        lane(1,1) = 3;
+        park_signals(1,1) = rand;
+    <span class="keyword">end</span>
+    park_signals(park_signals&gt;1) = 1;<span class="comment">%if desire bigger that 1</span>
+    park_signals(park_signals&lt;0) = -0.01;<span class="comment">%if desire bigger that 1</span>
+    park_signals(:,51:60) = 0;
+    lane(1:2,51:60) = -1;<span class="comment">%clear cars after 50 index</span>
+    <span class="keyword">for</span> j=c-10:-1:1
+        <span class="keyword">for</span> i=1:d
+           moved = 0;
+           speed = lane(i,j); <span class="comment">%current speed of the car</span>
+           <span class="keyword">if</span>(speed&gt;=0)
+              <span class="keyword">if</span>(speed&lt;5)
+                  next_spot = j;
+                  next_speed = speed;
+
+                  <span class="comment">%Rule 1#acceleration</span>
+                  <span class="keyword">if</span>(lane(i,j+1:j+speed+1)==-1)
+                      lane(i,j) = -1;
+                      lane(i,j+speed) = speed + 1;
+                      next_speed = lane(i,j+speed);
+                      next_spot = j+speed;
+                      moved = 1;
+                  <span class="keyword">end</span>
+              <span class="keyword">end</span>
+
+              <span class="keyword">if</span>(lane(i,j+1:j+speed)==-1)
+                  lane(i,j) = -1;
+                  lane(i,j+speed) = speed;
+                  next_speed = lane(i,j+speed);
+                  next_spot = j+speed;
+                  moved = 1;
+              <span class="keyword">end</span>
+
+              <span class="comment">%Rule 2#breaking</span>
+              <span class="keyword">if</span>(moved)
+                  <span class="keyword">if</span>(max(lane(i,j+speed+1:j+speed+next_speed))~=-1)
+                      found = 0;
+                      count = 0;
+                      <span class="keyword">for</span> k=j+1+speed:j+speed+next_speed
+                          count = count+1;
+                          <span class="keyword">if</span>((~found)&amp;&amp;(lane(i,k)&gt;=0))
+                              found = 1;
+                              lane(i,j+speed) = count-1;
+                              next_speed = count-1;
+                              next_spot = j+speed;
+                          <span class="keyword">end</span>
+                      <span class="keyword">end</span>
+                  <span class="keyword">end</span>
+              <span class="keyword">else</span>
+                  <span class="keyword">if</span>(max(lane(i,j+1:j+speed))~=-1)
+                      found = 0;
+                      count = 0;
+                      <span class="keyword">for</span> k=j+1:j+speed
+                          count = count+1;
+                          <span class="keyword">if</span>((~found)&amp;&amp;(lane(i,k)&gt;=0))
+                              found = 1;
+                              lane(i,j) = -1;
+                              lane(i,j+count-1) = 0;
+                              next_speed = 0;
+                              next_spot = j+count-1;
+                          <span class="keyword">end</span>
+                      <span class="keyword">end</span>
+                  <span class="keyword">end</span>
+              <span class="keyword">end</span>
+              <span class="comment">%Keeping track of the car that flagged the parking pos</span>
+              spot = find(park_flags == j);
+              <span class="keyword">if</span>(i==d &amp; spot)
+                  park_flags(spot) = next_spot;
+                  <span class="comment">%Stopping next to his flagged park spot</span>
+                  <span class="keyword">if</span>(next_spot&gt;=spot)
+                      lane(i,spot) = 1;
+                      lane(d+1,spot) = -1;
+                      park_flags(spot) = 0;
+                      <span class="keyword">if</span>(spot ~=next_spot)
+                          lane(i,next_spot) = -1;
+                      <span class="keyword">end</span>
+                  <span class="keyword">end</span>
+              <span class="keyword">end</span>
+
+           <span class="keyword">end</span>
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    <span class="comment">%Move park values to new positions</span>
+    <span class="keyword">for</span> i=1:d
+        park_signals(i,find(lane(i,:)&gt;=0)) = park_signals(i,find(park_signals(i,:)~=0));
+        park_signals(i,find(lane(i,:)&lt;0)) = 0;
+    <span class="keyword">end</span>
+
+    <span class="comment">%Rule3#random speed decrease</span>
+    decreased = 0;
+    <span class="keyword">for</span> j=c-10:-1:1
+        <span class="keyword">for</span> i=1:d
+            rand_dec = lane(i,j);
+            <span class="keyword">if</span>(rand_dec&gt;0 &amp;&amp; rand_dec&lt;=5)
+                <span class="keyword">if</span> ((lane(i,j) ~= -1) &amp;&amp; (rand(1)&gt;1-dec_prob))
+                    lane(i,j) = rand_dec-1;
+                    decreased = 1;
+                <span class="keyword">end</span>
+            <span class="keyword">end</span>
+            <span class="keyword">if</span> (decreased)
+                rand_dec = rand_dec-1;
+            <span class="keyword">end</span>
+
+            <span class="comment">%Change desire to park for all cars</span>
+            <span class="keyword">if</span>(rand_dec&gt;=0 &amp;&amp; park_signals(i,j)&lt;1)<span class="comment">%&lt;1 bec if he already want to park he should stay commited in order to park</span>
+                <span class="keyword">if</span>(rand_dec&gt;3)
+                    park_signals(i,j) = park_signals(i,j)-(0.55/rand_dec);
+                <span class="keyword">else</span>
+                    park_signals(i,j) = park_signals(i,j)+0.4;
+                <span class="keyword">end</span>
+            <span class="keyword">end</span>
+
+            <span class="comment">%Signal indication for lane change</span>
+            <span class="keyword">if</span>((i&gt;1) &amp;&amp; (rand_dec&gt;0) &amp;&amp; ((rand(1)*(rand_dec/5))&gt;1-max_prob_ch_hispe))
+                change_signals(i,j) = 1;<span class="comment">%flashing to the left</span>
+             <span class="keyword">elseif</span>((i&lt;d) &amp;&amp; (rand_dec&gt;0) &amp;&amp; (rand(1)*((6-rand_dec)/5)&gt;1-ch_slower_lane))
+                change_signals(i,j) = -1;<span class="comment">%flashing to the right</span>
+            <span class="keyword">end</span>
+            <span class="comment">%Signal indication for cars that want to park</span>
+            <span class="keyword">if</span>(park_signals(i,j) &gt;= 1)
+                change_signals(i,j) = -1;
+            <span class="keyword">end</span>
+        <span class="keyword">end</span>
+        <span class="comment">%Signal indication for unparking cars</span>
+        idx_unpark = find(steps_parked(1,:) &gt;= 5);
+        change_signals(d+1,idx_unpark) = 1;
+    <span class="keyword">end</span>
+
+
+    <span class="comment">%cars that haven't acquired the flag system</span>
+    idx_park = find(park_signals(d,1:last_park)&gt;=1);
+    exclude_already_flagged = park_flags(find(park_flags~=0));
+    park_spot = lane(d+1,idx_park) == 7;
+    park_temp = idx_park(park_spot);
+    park_temp = setdiff(park_temp,exclude_already_flagged);
+
+    <span class="keyword">for</span> s=1:length(park_temp)
+        <span class="comment">%if it's true the car steals the flagged position</span>
+        <span class="keyword">if</span>(1)
+            <span class="comment">%find the new indexes for the cars who had already flagged</span>
+            mask = find(park_flags~=0);
+            mask = mask(find(mask==park_temp(s)):end);
+            <span class="comment">%taking the flags of the car and after</span>
+            moving_flags = exclude_already_flagged(find(exclude_already_flagged==park_flags(1,park_temp(s))):end);
+            park_flags(mask) = 0;
+            lane(d+1,mask) = -1;
+            <span class="comment">%Showing the spot that is taken is unavailable</span>
+            lane(d+1,park_temp(s)) = 0;
+            <span class="keyword">for</span> re=1:length(mask)
+                new_flag = find(lane(d+1,mask(re):end)==-1,1)+mask(re)-1;
+                <span class="keyword">if</span>(new_flag&lt;=last_park)
+                    park_flags(new_flag) = moving_flags(re);
+                    lane(d+1,new_flag) = 7;
+                    <span class="keyword">if</span>(new_flag~=mask(re))
+                        fprintf (<span class="string">'Someone took your parking spot move to new spot:%d \n'</span>,new_flag);
+                    <span class="keyword">end</span>
+                <span class="keyword">else</span>
+                    fprintf (<span class="string">'Unfortunately someone took your parking spot and we cant find new pos near\n'</span>);
+                <span class="keyword">end</span>
+            <span class="keyword">end</span>
+            <span class="comment">%Returning in it to -1 in order to park the car that stole the flag</span>
+            lane(d+1,park_temp(s)) = -1;
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+    temp = lane;
+
+    <span class="comment">%flash switching and lane changing</span>
+    <span class="keyword">for</span> i=1:d+1
+        <span class="keyword">if</span>(i&lt;d+1)
+            idx_l = find(change_signals(i+1,:)==1);<span class="comment">%spots that cars want to flash left</span>
+            vac_sp_l = lane(i,idx_l)==-1;<span class="comment">% checking which of these spots are occupied</span>
+            temp(i,idx_l(vac_sp_l)) = 6;<span class="comment">%number 6 is flashing color for imagesc</span>
+            lane(i,idx_l(vac_sp_l)) = lane(i+1,idx_l(vac_sp_l));<span class="comment">%car going to the left</span>
+            lane(i+1,idx_l(vac_sp_l)) = -1;
+            change_signals(i+1,idx_l(vac_sp_l)) = 0;<span class="comment">%switching off flash</span>
+            <span class="keyword">if</span>(i&lt;d)
+                park_signals(i,idx_l(vac_sp_l)) = park_signals(i+1,idx_l(vac_sp_l));
+                park_signals(i+1,idx_l(vac_sp_l)) = 0;
+            <span class="keyword">end</span>
+            <span class="keyword">if</span>(i == d)
+                park_signals(i,idx_l(vac_sp_l)) = rand(1,sum(vac_sp_l))/5;<span class="comment">%giving new park variables</span>
+                steps_parked(idx_l(vac_sp_l)) = 0;
+            <span class="keyword">end</span>
+        <span class="keyword">end</span>
+        <span class="keyword">if</span>(i&gt;=2)
+            idx_r = find(change_signals(i-1,:)==-1);<span class="comment">%spots that cars want to flash right</span>
+            vac_sp_r = lane(i,idx_r)==-1;
+            temp(i,idx_r(vac_sp_r)) = 6;
+            <span class="keyword">if</span>(i == d+1)
+                park_signals(i-1,idx_r(vac_sp_r)) = 0;<span class="comment">%make zero the desire to park after parking</span>
+                lane(i,idx_r(vac_sp_r)) = 0;<span class="comment">%car stoped</span>
+            <span class="keyword">else</span>
+                lane(i,idx_r(vac_sp_r)) = lane(i-1,idx_r(vac_sp_r));
+                park_signals(i,idx_r(vac_sp_r)) = park_signals(i-1,idx_r(vac_sp_r));
+                park_signals(i-1,idx_r(vac_sp_r)) = 0;
+            <span class="keyword">end</span>
+            lane(i-1,idx_r(vac_sp_r)) = -1;
+            change_signals(i-1,idx_r(vac_sp_r)) = 0;
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+    idx_park = find(park_signals(d,1:last_park)&gt;=1);
+    exclude_already_flagged = park_flags(find(park_flags~=0));
+    park_spot = lane(d+1,idx_park) == -1;
+    park_temp = idx_park(~park_spot);
+    park_temp = setdiff(park_temp,exclude_already_flagged);
+
+    <span class="comment">%Put flag for cars that didnt find parking right next to them</span>
+    <span class="keyword">for</span> s=length(park_temp):-1:1
+        temp_idx = find(lane(d+1,park_temp(s)+1:end) == -1,1)+park_temp(s);
+        park_flags(1,temp_idx) =  park_temp(s);<span class="comment">%Reserving spot for the particular car</span>
+        temp(d+1,temp_idx) = 7;
+        lane(d+1,temp_idx) = 7;
+    <span class="keyword">end</span>
+
+    <span class="comment">%Increase time steps for each car parked</span>
+    idx_dur = find(lane(d+1,:) == 0);
+    steps_parked(idx_dur) = steps_parked(idx_dur)+1;
+
+    <span class="comment">%copy lane to time diagram for testing on each step</span>
+    full_road(e+d:e+d+2,:) = temp(1:d+1,:);
+
+<span class="comment">%     drawnow;</span>
+<span class="comment">%     figure</span>
+<span class="comment">%     imagesc(full_road(:,1:50));</span>
+<span class="comment">%     colormap(mymap); axis equal;</span>
+<span class="comment">%     colorbar</span>
+<span class="comment">%     caxis([-2 7])</span>
+<span class="keyword">end</span>
+<span class="comment">%plot lane-time</span>
+figure
+imagesc(full_road(:,1:50));
+colormap(mymap); axis <span class="string">equal</span>;
+colorbar
+caxis([-2 7])
+<span class="keyword">end</span>
+</pre><pre class="codeoutput">Someone took your parking spot move to new spot:27 
+Someone took your parking spot move to new spot:15 
+Someone took your parking spot move to new spot:31 
+Someone took your parking spot move to new spot:32 
+Someone took your parking spot move to new spot:33 
+Someone took your parking spot move to new spot:32 
+Someone took your parking spot move to new spot:33 
+Someone took your parking spot move to new spot:36 
+Someone took your parking spot move to new spot:33 
+Someone took your parking spot move to new spot:36 
+Someone took your parking spot move to new spot:39 
+Someone took your parking spot move to new spot:27 
+Someone took your parking spot move to new spot:28 
+Someone took your parking spot move to new spot:26 
+Someone took your parking spot move to new spot:27 
+Someone took your parking spot move to new spot:28 
+Someone took your parking spot move to new spot:40 
+Someone took your parking spot move to new spot:41 
+Someone took your parking spot move to new spot:43 
+Someone took your parking spot move to new spot:30 
+Someone took your parking spot move to new spot:28 
+Someone took your parking spot move to new spot:30 
+Someone took your parking spot move to new spot:35 
+Someone took your parking spot move to new spot:40 
+Someone took your parking spot move to new spot:41 
+Someone took your parking spot move to new spot:43 
+Someone took your parking spot move to new spot:44 
+Someone took your parking spot move to new spot:44 
+Unfortunately someone took your parking spot and we cant find new pos near
+Someone took your parking spot move to new spot:24 
+Someone took your parking spot move to new spot:25 
+Someone took your parking spot move to new spot:26 
+Someone took your parking spot move to new spot:41 
+Someone took your parking spot move to new spot:42 
+Someone took your parking spot move to new spot:45 
+Someone took your parking spot move to new spot:35 
+Someone took your parking spot move to new spot:45 
+Unfortunately someone took your parking spot and we cant find new pos near
+Someone took your parking spot move to new spot:26 
+Someone took your parking spot move to new spot:27 
+Someone took your parking spot move to new spot:38 
+Someone took your parking spot move to new spot:38 
+Someone took your parking spot move to new spot:39 
+Someone took your parking spot move to new spot:40 
+Someone took your parking spot move to new spot:41 
+Someone took your parking spot move to new spot:40 
+Someone took your parking spot move to new spot:41 
+Someone took your parking spot move to new spot:42 
+Someone took your parking spot move to new spot:41 
+Someone took your parking spot move to new spot:42 
+Someone took your parking spot move to new spot:43 
+Someone took your parking spot move to new spot:30 
+Someone took your parking spot move to new spot:10 
+Someone took your parking spot move to new spot:8 
+Someone took your parking spot move to new spot:9 
+Someone took your parking spot move to new spot:25 
+Someone took your parking spot move to new spot:26 
+Someone took your parking spot move to new spot:27 
+Someone took your parking spot move to new spot:42 
+Someone took your parking spot move to new spot:45 
+</pre><img vspace="5" hspace="5" src="NaSch_model_with_and_without_flags_and_time_parking_01.png" alt=""> <img vspace="5" hspace="5" src="NaSch_model_with_and_without_flags_and_time_parking_02.png" alt=""> <img vspace="5" hspace="5" src="NaSch_model_with_and_without_flags_and_time_parking_03.png" alt=""> <img vspace="5" hspace="5" src="NaSch_model_with_and_without_flags_and_time_parking_04.png" alt=""> <img vspace="5" hspace="5" src="NaSch_model_with_and_without_flags_and_time_parking_05.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2017a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+clear;
+clc;
+X = importdata('test_data.txt');
+mymap = [0.6350 0.2 0 %-2
+     1 1 1 %-1
+     0 0 0 %0
+     1 0 0 %1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   %1
+     0 1 0 %2
+     0 1 1 %3
+     0 0 1 %4
+     0.75 0 0.75 %5
+     1 1 0 %6
+     0.45 0.45 0.45]; %7
+ch_slower_lane = 0.55;%chance of flashing to the right
+max_prob_ch_hispe = 0.65;%chance of flashing to the left
+new_car_prob = 0.8;%new cars
+dec_prob = 0.25;%chance of decreasing speed
+rand_park = 0.15;%random chance to park
+first_park = 5;
+last_park = 45;
+chance_of_not_having_flag = 0.15;
+max_parked = 5;%max time step that the car is parked 
+
+cars1 = 8;
+cars2 = 14;
+for pub=1:5
+full_road = zeros(65,60);
+full_road(:,:) = -2;
+lane(1:2,1:60) = -1;%initialize all lanes
+if (0)
+    lane(2,:) = X(:,1)';%initialize slow lane
+else
+    index_lane1 = randsample(50,cars1)';%random car positions on fast lane
+    index_lane2 = randsample(50,cars2)';%random car positions on slow lane
+    lane(1,index_lane1) = randi([0 5],1,cars1);%random speed of the cars at fast lane
+    lane(2,index_lane2) = randi([0 5],1,cars2);%random speed of the cars at slow lane
+end
+if(pub == 1)
+    [d,c] = size(lane);%init
+end
+par_slots = zeros(1,c);
+steps_parked = zeros(1,c);%how many time steps each car has stayed parked
+par_slots(1,:) = -2;
+par_slots(1,first_park:last_park) = -1;
+ par_slots(1,10:17)=0;
+ par_slots(1,19:22)=0;
+ par_slots(1,30:37)=0;
+lane(3,:) = par_slots;
+park_signals = zeros(d,c);
+park_flags = zeros(1,c);
+park_flags(1,first_park:last_park) = 0; 
+
+%desire to park 
+park_signals(1,index_lane1) = rand(1,cars1)/2;
+park_signals(2,index_lane2) = rand(1,cars2)/2;
+
+full_road(2,:) = lane(1,:);
+full_road(3,:) = lane(2,:);
+full_road(4,:) = lane(3,:);
+
+[iter,~] = size(full_road);
+full_road(iter+d+2,:) = -2;
+
+for e=4:4:iter
+    change_signals = zeros(d+1,c);%signals for changing lanes
+    if ((lane(2,1) == -1) && (rand(1)>1-new_car_prob))%new cars
+        lane(2,1) = 1;
+        park_signals(2,1) = rand;
+    end
+    
+    if ((lane(1,1) == -1) && (rand(1)>1-new_car_prob))%new cars
+        lane(1,1) = 3;
+        park_signals(1,1) = rand;
+    end
+    park_signals(park_signals>1) = 1;%if desire bigger that 1
+    park_signals(park_signals<0) = -0.01;%if desire bigger that 1
+    park_signals(:,51:60) = 0;
+    lane(1:2,51:60) = -1;%clear cars after 50 index
+    for j=c-10:-1:1
+        for i=1:d
+           moved = 0;
+           speed = lane(i,j); %current speed of the car
+           if(speed>=0)
+              if(speed<5)
+                  next_spot = j;
+                  next_speed = speed;
+                  
+                  %Rule 1#acceleration
+                  if(lane(i,j+1:j+speed+1)==-1)
+                      lane(i,j) = -1;
+                      lane(i,j+speed) = speed + 1;
+                      next_speed = lane(i,j+speed);
+                      next_spot = j+speed;
+                      moved = 1;
+                  end   
+              end
+
+              if(lane(i,j+1:j+speed)==-1)
+                  lane(i,j) = -1;
+                  lane(i,j+speed) = speed;
+                  next_speed = lane(i,j+speed);
+                  next_spot = j+speed;
+                  moved = 1;
+              end
+
+              %Rule 2#breaking 
+              if(moved)
+                  if(max(lane(i,j+speed+1:j+speed+next_speed))~=-1)
+                      found = 0;
+                      count = 0;
+                      for k=j+1+speed:j+speed+next_speed
+                          count = count+1;
+                          if((~found)&&(lane(i,k)>=0))
+                              found = 1;
+                              lane(i,j+speed) = count-1;
+                              next_speed = count-1;
+                              next_spot = j+speed;
+                          end
+                      end
+                  end
+              else
+                  if(max(lane(i,j+1:j+speed))~=-1)
+                      found = 0;
+                      count = 0;
+                      for k=j+1:j+speed
+                          count = count+1;
+                          if((~found)&&(lane(i,k)>=0))
+                              found = 1;
+                              lane(i,j) = -1;
+                              lane(i,j+count-1) = 0;
+                              next_speed = 0;
+                              next_spot = j+count-1;
+                          end
+                      end
+                  end
+              end
+              %Keeping track of the car that flagged the parking pos
+              spot = find(park_flags == j);
+              if(i==d & spot)
+                  park_flags(spot) = next_spot;
+                  %Stopping next to his flagged park spot
+                  if(next_spot>=spot)
+                      lane(i,spot) = 1;
+                      lane(d+1,spot) = -1;
+                      park_flags(spot) = 0; 
+                      if(spot ~=next_spot)
+                          lane(i,next_spot) = -1;
+                      end
+                  end
+              end
+              
+           end
+        end
+    end
+    %Move park values to new positions
+    for i=1:d
+        park_signals(i,find(lane(i,:)>=0)) = park_signals(i,find(park_signals(i,:)~=0));
+        park_signals(i,find(lane(i,:)<0)) = 0;
+    end
+
+    %Rule3#random speed decrease
+    decreased = 0;
+    for j=c-10:-1:1      
+        for i=1:d          
+            rand_dec = lane(i,j);
+            if(rand_dec>0 && rand_dec<=5)
+                if ((lane(i,j) ~= -1) && (rand(1)>1-dec_prob))
+                    lane(i,j) = rand_dec-1;
+                    decreased = 1;
+                end
+            end
+            if (decreased)
+                rand_dec = rand_dec-1;
+            end
+
+            %Change desire to park for all cars
+            if(rand_dec>=0 && park_signals(i,j)<1)%<1 bec if he already want to park he should stay commited in order to park
+                if(rand_dec>3)
+                    park_signals(i,j) = park_signals(i,j)-(0.55/rand_dec);
+                else
+                    park_signals(i,j) = park_signals(i,j)+0.4;
+                end
+            end
+            
+            %Signal indication for lane change
+            if((i>1) && (rand_dec>0) && ((rand(1)*(rand_dec/5))>1-max_prob_ch_hispe))
+                change_signals(i,j) = 1;%flashing to the left
+             elseif((i<d) && (rand_dec>0) && (rand(1)*((6-rand_dec)/5)>1-ch_slower_lane))
+                change_signals(i,j) = -1;%flashing to the right
+            end       
+            %Signal indication for cars that want to park
+            if(park_signals(i,j) >= 1)
+                change_signals(i,j) = -1;
+            end
+        end 
+        %Signal indication for unparking cars
+        idx_unpark = find(steps_parked(1,:) >= 5);
+        change_signals(d+1,idx_unpark) = 1;
+    end
+    
+    
+    %cars that haven't acquired the flag system
+    idx_park = find(park_signals(d,1:last_park)>=1);
+    exclude_already_flagged = park_flags(find(park_flags~=0));
+    park_spot = lane(d+1,idx_park) == 7;
+    park_temp = idx_park(park_spot);
+    park_temp = setdiff(park_temp,exclude_already_flagged);
+    
+    for s=1:length(park_temp)
+        %if it's true the car steals the flagged position
+        if(1)
+            %find the new indexes for the cars who had already flagged
+            mask = find(park_flags~=0);
+            mask = mask(find(mask==park_temp(s)):end);
+            %taking the flags of the car and after
+            moving_flags = exclude_already_flagged(find(exclude_already_flagged==park_flags(1,park_temp(s))):end);
+            park_flags(mask) = 0;
+            lane(d+1,mask) = -1;
+            %Showing the spot that is taken is unavailable
+            lane(d+1,park_temp(s)) = 0;
+            for re=1:length(mask)
+                new_flag = find(lane(d+1,mask(re):end)==-1,1)+mask(re)-1;
+                if(new_flag<=last_park)
+                    park_flags(new_flag) = moving_flags(re);
+                    lane(d+1,new_flag) = 7;
+                    if(new_flag~=mask(re))
+                        fprintf ('Someone took your parking spot move to new spot:%d \n',new_flag);
+                    end
+                else
+                    fprintf ('Unfortunately someone took your parking spot and we cant find new pos near\n');
+                end
+            end
+            %Returning in it to -1 in order to park the car that stole the flag
+            lane(d+1,park_temp(s)) = -1;
+        end
+    end
+    
+    temp = lane;
+    
+    %flash switching and lane changing 
+    for i=1:d+1
+        if(i<d+1)
+            idx_l = find(change_signals(i+1,:)==1);%spots that cars want to flash left
+            vac_sp_l = lane(i,idx_l)==-1;% checking which of these spots are occupied
+            temp(i,idx_l(vac_sp_l)) = 6;%number 6 is flashing color for imagesc
+            lane(i,idx_l(vac_sp_l)) = lane(i+1,idx_l(vac_sp_l));%car going to the left
+            lane(i+1,idx_l(vac_sp_l)) = -1;
+            change_signals(i+1,idx_l(vac_sp_l)) = 0;%switching off flash
+            if(i<d)
+                park_signals(i,idx_l(vac_sp_l)) = park_signals(i+1,idx_l(vac_sp_l));
+                park_signals(i+1,idx_l(vac_sp_l)) = 0;
+            end
+            if(i == d)
+                park_signals(i,idx_l(vac_sp_l)) = rand(1,sum(vac_sp_l))/5;%giving new park variables
+                steps_parked(idx_l(vac_sp_l)) = 0;
+            end
+        end
+        if(i>=2)
+            idx_r = find(change_signals(i-1,:)==-1);%spots that cars want to flash right
+            vac_sp_r = lane(i,idx_r)==-1;
+            temp(i,idx_r(vac_sp_r)) = 6;
+            if(i == d+1)
+                park_signals(i-1,idx_r(vac_sp_r)) = 0;%make zero the desire to park after parking
+                lane(i,idx_r(vac_sp_r)) = 0;%car stoped
+            else
+                lane(i,idx_r(vac_sp_r)) = lane(i-1,idx_r(vac_sp_r));
+                park_signals(i,idx_r(vac_sp_r)) = park_signals(i-1,idx_r(vac_sp_r));
+                park_signals(i-1,idx_r(vac_sp_r)) = 0;
+            end
+            lane(i-1,idx_r(vac_sp_r)) = -1;
+            change_signals(i-1,idx_r(vac_sp_r)) = 0;
+        end
+    end
+    
+    idx_park = find(park_signals(d,1:last_park)>=1);
+    exclude_already_flagged = park_flags(find(park_flags~=0));
+    park_spot = lane(d+1,idx_park) == -1;
+    park_temp = idx_park(~park_spot);
+    park_temp = setdiff(park_temp,exclude_already_flagged);
+    
+    %Put flag for cars that didnt find parking right next to them
+    for s=length(park_temp):-1:1
+        temp_idx = find(lane(d+1,park_temp(s)+1:end) == -1,1)+park_temp(s);
+        park_flags(1,temp_idx) =  park_temp(s);%Reserving spot for the particular car
+        temp(d+1,temp_idx) = 7;
+        lane(d+1,temp_idx) = 7;
+    end
+    
+    %Increase time steps for each car parked
+    idx_dur = find(lane(d+1,:) == 0);
+    steps_parked(idx_dur) = steps_parked(idx_dur)+1;
+    
+    %copy lane to time diagram for testing on each step
+    full_road(e+d:e+d+2,:) = temp(1:d+1,:);
+    
+%     drawnow;
+%     figure
+%     imagesc(full_road(:,1:50));
+%     colormap(mymap); axis equal;
+%     colorbar
+%     caxis([-2 7])
+end
+%plot lane-time
+figure
+imagesc(full_road(:,1:50));
+colormap(mymap); axis equal;
+colorbar
+caxis([-2 7])
+end
+##### SOURCE END #####
+--></body></html>

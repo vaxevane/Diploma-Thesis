@@ -1,0 +1,404 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>with_double_side_park</title><meta name="generator" content="MATLAB 9.2"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2020-04-21"><meta name="DC.source" content="with_double_side_park.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput">clear;
+clc;
+
+new_car_prob = 0.7;<span class="comment">%new cars</span>
+dec_prob = 0.25;<span class="comment">%chance of decreasing speed</span>
+first_park = 5;
+last_park = 20;
+chance_of_not_having_flag = 0.15;
+max_parked = 5;<span class="comment">%max time step that the car is parked</span>
+
+cars1 = 6;
+cars2 = 6;
+
+<span class="comment">%intersection variables</span>
+intersection = [14 12];
+max_red = 6;<span class="comment">%max number of red</span>
+thr_press = 5; <span class="comment">%pressure threshold</span>
+top_is_red = 1;
+left_is_red = 0;
+count_red_left = 0;
+count_red_top = 0;
+full_road = zeros(40,40);
+[iter,~] = size(full_road);
+
+full_road(:,:) = -1;
+hor_lane = -ones(1,40);
+vert_lane = -ones(1,40);
+[d,c] = size(hor_lane);
+
+index_lane1 = randsample(30,cars1)';<span class="comment">%random car positions on fast lane</span>
+index_lane2 = randsample(30,cars2)';<span class="comment">%random car positions on slow lane</span>
+hor_lane(1,index_lane1) = randi([0 5],1,cars1);
+vert_lane(1,index_lane2) = randi([0 5],1,cars2);<span class="comment">%random speed of the moving cars</span>
+
+<span class="comment">%Parking on horizontal lane</span>
+hor_par_slots = zeros(2,c);
+hor_steps_parked = zeros(2,c);<span class="comment">%how many time steps each car has stayed parked</span>
+hor_par_slots(1:2,:) = -2;
+hor_par_slots(1,3:first_park+1) = -1;
+hor_par_slots(1,intersection(2)+3:last_park+3) = -1;
+hor_par_slots(2,3:first_park+1) = -1;
+hor_par_slots(2,intersection(2)+3:last_park+3) = -1;
+hor_lane(2,:) = hor_par_slots(1,:);
+hor_lane(3,:) = hor_par_slots(2,:);
+hor_park_signals = zeros(d,c);
+hor_park_flags = zeros(2,c);
+
+<span class="comment">%Parking on vertical lane</span>
+vert_par_slots = zeros(2,c);
+vert_steps_parked = zeros(2,c);<span class="comment">%how many time steps each car has stayed parked</span>
+vert_par_slots(1:2,:) = -2;
+vert_par_slots(1,3:first_park+1) = -1;
+vert_par_slots(1,intersection(1)+4:last_park+3) = -1;
+vert_par_slots(2,3:first_park+1) = -1;
+vert_par_slots(2,intersection(1)+4:last_park+3) = -1;
+vert_lane(2,:) = vert_par_slots(1,:);
+vert_lane(3,:) = vert_par_slots(2,:);
+vert_park_signals = zeros(d,c);
+vert_park_flags = zeros(2,c);
+
+hor_park_signals(1,index_lane1) = (rand(1,cars1)/2)-0.2;
+vert_park_signals(1,index_lane2) = (rand(1,cars1)/2)-0.2;
+
+<span class="comment">%bountaries</span>
+full_road(intersection(1)-2,1:intersection(2)-2) = -2;
+full_road(intersection(1)-2,intersection(2)+2:end) = -2;
+full_road(1:intersection(1)-2,intersection(2)-2) = -2;
+full_road(1:intersection(1)-2,intersection(2)+2) = -2;
+full_road(intersection(1)+2,1:intersection(2)-2) = -2;
+full_road(intersection(1)+2,intersection(2)+2:end) = -2;
+full_road(intersection(1)+2:end,intersection(2)-2) = -2;
+full_road(intersection(1)+2:end,intersection(2)+2) = -2;
+
+<span class="comment">%light</span>
+full_road(intersection(1)+3,intersection(2)-3) = 10;
+full_road(intersection(1)-3,intersection(2)+3) = 11;
+
+<span class="comment">%Copying to full_road</span>
+full_road(intersection(1)-1,:) = hor_lane(3,:);
+full_road(intersection(1),:) = hor_lane(1,:);
+full_road(intersection(1)+1,:) = hor_lane(2,:);
+full_road(:,intersection(2)+1) = vert_lane(3,:)';
+full_road(:,intersection(2)) = vert_lane(1,:)';
+full_road(:,intersection(2)-1) = vert_lane(2,:)';
+full_road(intersection(1),intersection(2)-1) = hor_lane(1,intersection(2)-1);
+full_road(intersection(1),intersection(2)+1) = hor_lane(1,intersection(2)+1);
+
+draw(full_road,intersection,1);
+<span class="keyword">if</span> (vert_lane(1,intersection(1))~=-1)
+    vert_lane(1,intersection(1)) = 6;
+    vert_park_signals = 0;
+<span class="keyword">else</span>
+    vert_lane(1,intersection(1)) = 6;
+<span class="keyword">end</span>
+
+<span class="keyword">for</span> e=2:1:16
+    <span class="keyword">for</span> roads=1:2
+        <span class="keyword">if</span> (roads == 1)
+            [hor_lane,hor_park_signals,hor_park_flags,hor_change_signals] = move(hor_lane,new_car_prob,hor_park_signals,hor_park_flags,dec_prob);
+        <span class="keyword">elseif</span> (roads == 2)
+            [vert_lane,vert_park_signals,vert_park_flags,vert_change_signals] = move(vert_lane,new_car_prob,vert_park_signals,vert_park_flags,dec_prob);
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    <span class="comment">%if car is at the center of the intersection move it +1</span>
+    <span class="keyword">if</span>(left_is_red &amp;&amp; vert_lane(1,intersection(1)+1)==-1)
+        vert_lane(1,intersection(1)+1) = vert_lane(1,intersection(1));<span class="comment">%if car stayed at the</span>
+        vert_lane(1,intersection(1)) = -1;
+        vert_park_signals(1,intersection(1)+1) = vert_park_signals(1,intersection(1));
+        vert_park_signals(1,intersection(1)) = 0;
+        vert_park_flags(find(vert_park_flags==intersection(1))) = intersection(1)+1;
+    <span class="keyword">end</span>
+    <span class="keyword">if</span>(top_is_red &amp;&amp; hor_lane(1,intersection(2)+1)==-1)
+        hor_lane(1,intersection(2)+1) = hor_lane(1,intersection(2));<span class="comment">%if car stayed at the</span>
+        hor_lane(1,intersection(2)) = -1;
+        hor_park_signals(1,intersection(2)+1) = hor_park_signals(1,intersection(2));
+        hor_park_signals(1,intersection(2)) = 0;
+        hor_park_flags(find(hor_park_flags==intersection(2))) = intersection(2)+1;
+    <span class="keyword">end</span>
+
+    <span class="keyword">for</span> roads=1:2
+        <span class="keyword">if</span> (roads == 1)
+            [hor_lane,hor_temp,hor_park_flags,hor_steps_parked,hor_park_signals] = parking(hor_lane,hor_park_signals,hor_change_signals,hor_park_flags,hor_steps_parked,last_park,e);
+        <span class="keyword">elseif</span> (roads == 2)
+            [vert_lane,vert_temp,vert_park_flags,vert_steps_parked,vert_park_signals] = parking(vert_lane,vert_park_signals,vert_change_signals,vert_park_flags,vert_steps_parked,last_park,e);
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+    <span class="comment">%counting red lights and visualizing full road</span>
+    <span class="keyword">if</span>(top_is_red)
+        count_red_top = count_red_top+1;
+        full_road(:,intersection(2)+1) = vert_temp(3,:)';
+        full_road(:,intersection(2)) = vert_temp(1,:)';<span class="comment">%avoid grey color of the o%avoid grey color of the obstaclebstacle</span>
+        full_road(:,intersection(2)-1) = vert_temp(2,:)';
+        full_road(intersection(1)-1,:) = hor_temp(3,:);
+        full_road(intersection(1),:) = hor_temp(1,:);
+        full_road(intersection(1)+1,:) = hor_temp(2,:);
+        full_road(intersection(1)-1,intersection(2)) = vert_temp(1,intersection(1)-1);
+        full_road(intersection(1)+1,intersection(2)) = vert_temp(1,intersection(1)+1);
+    <span class="keyword">elseif</span>(left_is_red)
+        full_road(intersection(1)-1,:) = hor_temp(3,:);
+        full_road(intersection(1),:) = hor_temp(1,:);
+        full_road(intersection(1)+1,:) = hor_temp(2,:);
+        full_road(:,intersection(2)+1) = vert_temp(3,:)';
+        full_road(:,intersection(2)) = vert_temp(1,:)';
+        full_road(:,intersection(2)-1) = vert_temp(2,:)';
+        full_road(intersection(1),intersection(2)-1) = hor_temp(1,intersection(2)-1);
+        full_road(intersection(1),intersection(2)+1) = hor_temp(1,intersection(2)+1);
+        count_red_left = count_red_left+1;
+    <span class="keyword">end</span>
+
+    draw(full_road,intersection,e);
+
+    [hor_lane,vert_lane,left_is_red,top_is_red,count_red_left,count_red_top] = change_traffic_light(vert_lane,hor_lane,max_red,thr_press,count_red_left,count_red_top,intersection);
+
+    <span class="comment">%switching traffic lights</span>
+    <span class="keyword">if</span> top_is_red==1, full_road(intersection(1)-3,intersection(2)+3) = 10; <span class="keyword">else</span>, full_road(intersection(1)-3,intersection(2)+3) = 11; <span class="keyword">end</span>
+    <span class="keyword">if</span> left_is_red==1, full_road(intersection(1)+3,intersection(2)-3) = 10; <span class="keyword">else</span>, full_road(intersection(1)+3,intersection(2)-3) = 11; <span class="keyword">end</span>
+<span class="keyword">end</span>
+</pre><pre class="codeoutput">Warning: Image is too big to fit on screen; displaying at 50% 
+Warning: Image is too big to fit on screen; displaying at 50% 
+Warning: Image is too big to fit on screen; displaying at 50% 
+Warning: Image is too big to fit on screen; displaying at 50% 
+Warning: Image is too big to fit on screen; displaying at 50% 
+Warning: Image is too big to fit on screen; displaying at 50% 
+Warning: Image is too big to fit on screen; displaying at 50% 
+Warning: Image is too big to fit on screen; displaying at 50% 
+Warning: Image is too big to fit on screen; displaying at 50% 
+Warning: Image is too big to fit on screen; displaying at 50% 
+Warning: Image is too big to fit on screen; displaying at 50% 
+Warning: Image is too big to fit on screen; displaying at 50% 
+Warning: Image is too big to fit on screen; displaying at 50% 
+Warning: Image is too big to fit on screen; displaying at 50% 
+Warning: Image is too big to fit on screen; displaying at 50% 
+Warning: Image is too big to fit on screen; displaying at 50% 
+</pre><img vspace="5" hspace="5" src="with_double_side_park_01.png" alt=""> <img vspace="5" hspace="5" src="with_double_side_park_02.png" alt=""> <img vspace="5" hspace="5" src="with_double_side_park_03.png" alt=""> <img vspace="5" hspace="5" src="with_double_side_park_04.png" alt=""> <img vspace="5" hspace="5" src="with_double_side_park_05.png" alt=""> <img vspace="5" hspace="5" src="with_double_side_park_06.png" alt=""> <img vspace="5" hspace="5" src="with_double_side_park_07.png" alt=""> <img vspace="5" hspace="5" src="with_double_side_park_08.png" alt=""> <img vspace="5" hspace="5" src="with_double_side_park_09.png" alt=""> <img vspace="5" hspace="5" src="with_double_side_park_10.png" alt=""> <img vspace="5" hspace="5" src="with_double_side_park_11.png" alt=""> <img vspace="5" hspace="5" src="with_double_side_park_12.png" alt=""> <img vspace="5" hspace="5" src="with_double_side_park_13.png" alt=""> <img vspace="5" hspace="5" src="with_double_side_park_14.png" alt=""> <img vspace="5" hspace="5" src="with_double_side_park_15.png" alt=""> <img vspace="5" hspace="5" src="with_double_side_park_16.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2017a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+clear;
+clc;
+
+new_car_prob = 0.7;%new cars
+dec_prob = 0.25;%chance of decreasing speed
+first_park = 5;
+last_park = 20;
+chance_of_not_having_flag = 0.15;
+max_parked = 5;%max time step that the car is parked 
+
+cars1 = 6;
+cars2 = 6;
+
+%intersection variables
+intersection = [14 12];
+max_red = 6;%max number of red
+thr_press = 5; %pressure threshold
+top_is_red = 1;
+left_is_red = 0;
+count_red_left = 0;
+count_red_top = 0;
+full_road = zeros(40,40);
+[iter,~] = size(full_road);
+
+full_road(:,:) = -1;
+hor_lane = -ones(1,40);
+vert_lane = -ones(1,40);
+[d,c] = size(hor_lane);
+
+index_lane1 = randsample(30,cars1)';%random car positions on fast lane
+index_lane2 = randsample(30,cars2)';%random car positions on slow lane
+hor_lane(1,index_lane1) = randi([0 5],1,cars1);
+vert_lane(1,index_lane2) = randi([0 5],1,cars2);%random speed of the moving cars
+
+%Parking on horizontal lane
+hor_par_slots = zeros(2,c);
+hor_steps_parked = zeros(2,c);%how many time steps each car has stayed parked
+hor_par_slots(1:2,:) = -2;
+hor_par_slots(1,3:first_park+1) = -1;
+hor_par_slots(1,intersection(2)+3:last_park+3) = -1;
+hor_par_slots(2,3:first_park+1) = -1;
+hor_par_slots(2,intersection(2)+3:last_park+3) = -1;
+hor_lane(2,:) = hor_par_slots(1,:);
+hor_lane(3,:) = hor_par_slots(2,:);
+hor_park_signals = zeros(d,c);
+hor_park_flags = zeros(2,c);
+
+%Parking on vertical lane
+vert_par_slots = zeros(2,c);
+vert_steps_parked = zeros(2,c);%how many time steps each car has stayed parked
+vert_par_slots(1:2,:) = -2;
+vert_par_slots(1,3:first_park+1) = -1;
+vert_par_slots(1,intersection(1)+4:last_park+3) = -1;
+vert_par_slots(2,3:first_park+1) = -1;
+vert_par_slots(2,intersection(1)+4:last_park+3) = -1;
+vert_lane(2,:) = vert_par_slots(1,:);
+vert_lane(3,:) = vert_par_slots(2,:);
+vert_park_signals = zeros(d,c);
+vert_park_flags = zeros(2,c);
+
+hor_park_signals(1,index_lane1) = (rand(1,cars1)/2)-0.2;
+vert_park_signals(1,index_lane2) = (rand(1,cars1)/2)-0.2;
+
+%bountaries
+full_road(intersection(1)-2,1:intersection(2)-2) = -2;
+full_road(intersection(1)-2,intersection(2)+2:end) = -2;
+full_road(1:intersection(1)-2,intersection(2)-2) = -2;
+full_road(1:intersection(1)-2,intersection(2)+2) = -2;
+full_road(intersection(1)+2,1:intersection(2)-2) = -2;
+full_road(intersection(1)+2,intersection(2)+2:end) = -2;
+full_road(intersection(1)+2:end,intersection(2)-2) = -2;
+full_road(intersection(1)+2:end,intersection(2)+2) = -2;
+
+%light
+full_road(intersection(1)+3,intersection(2)-3) = 10;
+full_road(intersection(1)-3,intersection(2)+3) = 11;
+
+%Copying to full_road
+full_road(intersection(1)-1,:) = hor_lane(3,:);
+full_road(intersection(1),:) = hor_lane(1,:);
+full_road(intersection(1)+1,:) = hor_lane(2,:);
+full_road(:,intersection(2)+1) = vert_lane(3,:)';
+full_road(:,intersection(2)) = vert_lane(1,:)';
+full_road(:,intersection(2)-1) = vert_lane(2,:)';
+full_road(intersection(1),intersection(2)-1) = hor_lane(1,intersection(2)-1);
+full_road(intersection(1),intersection(2)+1) = hor_lane(1,intersection(2)+1);
+
+draw(full_road,intersection,1);
+if (vert_lane(1,intersection(1))~=-1)
+    vert_lane(1,intersection(1)) = 6;
+    vert_park_signals = 0;
+else
+    vert_lane(1,intersection(1)) = 6;
+end
+
+for e=2:1:16
+    for roads=1:2
+        if (roads == 1)
+            [hor_lane,hor_park_signals,hor_park_flags,hor_change_signals] = move(hor_lane,new_car_prob,hor_park_signals,hor_park_flags,dec_prob);
+        elseif (roads == 2)
+            [vert_lane,vert_park_signals,vert_park_flags,vert_change_signals] = move(vert_lane,new_car_prob,vert_park_signals,vert_park_flags,dec_prob);
+        end
+    end
+    %if car is at the center of the intersection move it +1 
+    if(left_is_red && vert_lane(1,intersection(1)+1)==-1)
+        vert_lane(1,intersection(1)+1) = vert_lane(1,intersection(1));%if car stayed at the 
+        vert_lane(1,intersection(1)) = -1;
+        vert_park_signals(1,intersection(1)+1) = vert_park_signals(1,intersection(1));
+        vert_park_signals(1,intersection(1)) = 0;
+        vert_park_flags(find(vert_park_flags==intersection(1))) = intersection(1)+1;
+    end
+    if(top_is_red && hor_lane(1,intersection(2)+1)==-1)
+        hor_lane(1,intersection(2)+1) = hor_lane(1,intersection(2));%if car stayed at the 
+        hor_lane(1,intersection(2)) = -1;
+        hor_park_signals(1,intersection(2)+1) = hor_park_signals(1,intersection(2));
+        hor_park_signals(1,intersection(2)) = 0;
+        hor_park_flags(find(hor_park_flags==intersection(2))) = intersection(2)+1;
+    end
+    
+    for roads=1:2
+        if (roads == 1)
+            [hor_lane,hor_temp,hor_park_flags,hor_steps_parked,hor_park_signals] = parking(hor_lane,hor_park_signals,hor_change_signals,hor_park_flags,hor_steps_parked,last_park,e);
+        elseif (roads == 2)
+            [vert_lane,vert_temp,vert_park_flags,vert_steps_parked,vert_park_signals] = parking(vert_lane,vert_park_signals,vert_change_signals,vert_park_flags,vert_steps_parked,last_park,e);
+        end
+    end
+    
+    %counting red lights and visualizing full road
+    if(top_is_red)
+        count_red_top = count_red_top+1;
+        full_road(:,intersection(2)+1) = vert_temp(3,:)';
+        full_road(:,intersection(2)) = vert_temp(1,:)';%avoid grey color of the o%avoid grey color of the obstaclebstacle
+        full_road(:,intersection(2)-1) = vert_temp(2,:)';
+        full_road(intersection(1)-1,:) = hor_temp(3,:);
+        full_road(intersection(1),:) = hor_temp(1,:);
+        full_road(intersection(1)+1,:) = hor_temp(2,:);
+        full_road(intersection(1)-1,intersection(2)) = vert_temp(1,intersection(1)-1);
+        full_road(intersection(1)+1,intersection(2)) = vert_temp(1,intersection(1)+1);
+    elseif(left_is_red)
+        full_road(intersection(1)-1,:) = hor_temp(3,:);
+        full_road(intersection(1),:) = hor_temp(1,:);
+        full_road(intersection(1)+1,:) = hor_temp(2,:);
+        full_road(:,intersection(2)+1) = vert_temp(3,:)';
+        full_road(:,intersection(2)) = vert_temp(1,:)';
+        full_road(:,intersection(2)-1) = vert_temp(2,:)';
+        full_road(intersection(1),intersection(2)-1) = hor_temp(1,intersection(2)-1);
+        full_road(intersection(1),intersection(2)+1) = hor_temp(1,intersection(2)+1);
+        count_red_left = count_red_left+1;
+    end
+    
+    draw(full_road,intersection,e);
+
+    [hor_lane,vert_lane,left_is_red,top_is_red,count_red_left,count_red_top] = change_traffic_light(vert_lane,hor_lane,max_red,thr_press,count_red_left,count_red_top,intersection);
+
+    %switching traffic lights
+    if top_is_red==1, full_road(intersection(1)-3,intersection(2)+3) = 10; else, full_road(intersection(1)-3,intersection(2)+3) = 11; end
+    if left_is_red==1, full_road(intersection(1)+3,intersection(2)-3) = 10; else, full_road(intersection(1)+3,intersection(2)-3) = 11; end 
+end
+##### SOURCE END #####
+--></body></html>
